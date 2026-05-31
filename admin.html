@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실험 관리자 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c12;
+    --surface: #13151f;
+    --surface2: #1a1d2b;
+    --border: #252840;
+    --accent: #5b8dee;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --text: #e8eaf6;
+    --text2: #8b90b8;
+    --text3: #454868;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* 사이드바 */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 220px; height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo span {
+    display: block;
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: 0;
+  }
+
+  .nav-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(91,141,238,0.12); color: var(--accent); }
+
+  .sidebar-footer {
+    margin-top: auto;
+  }
+
+  .url-setting {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+
+  .url-setting label {
+    display: block;
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .url-setting input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    outline: none;
+    margin-bottom: 8px;
+  }
+
+  .url-setting input:focus { border-color: var(--accent); }
+
+  .url-setting button {
+    width: 100%;
+    padding: 7px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* 메인 영역 */
+  .main {
+    margin-left: 220px;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  /* 탭 패널 */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* 헤더 */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  .btn-refresh {
+    padding: 9px 18px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 요약 카드 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .stat-card .label {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .stat-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+  }
+
+  .stat-card .sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  /* 조건별 평균 카드 */
+  .condition-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .condition-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .condition-card .c-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .condition-badge {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .badge-A { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge-B { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .badge-C { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-D { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+  .condition-card .c-title {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .condition-card .c-desc {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metric-row:last-child { border-bottom: none; }
+
+  .metric-row .m-label {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .metric-row .m-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .metric-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .metric-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* 응답 테이블 */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-toolbar {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-toolbar .t-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .table-toolbar .t-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody td {
+    padding: 10px 14px;
+    color: var(--text2);
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+
+  tbody td.highlight { color: var(--text); font-weight: 500; }
+
+  /* 태그 */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tag-yes { background: rgba(74,222,128,0.1); color: var(--green); }
+  .tag-no { background: rgba(248,113,113,0.1); color: var(--red); }
+
+  /* 로딩 */
+  .loading-state {
+    text-align: center;
+    padding: 60px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 빈 상태 */
+  .empty-state {
+    text-align: center;
+    padding: 60px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+
+  /* 개별 응답 상세 */
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .detail-card .dc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-card .dc-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .detail-card .dc-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .room-scores {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .room-score-cell {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .room-score-cell .rs-room {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+
+  .room-score-cell .rs-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .room-score-cell .rs-sub {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  /* 반응형 */
+  @media (max-width: 1100px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .condition-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    INDOOR ENV LAB
+    <span>관리자 대시보드</span>
+  </div>
+
+  <div class="nav-item active" onclick="showPanel('overview')">
+    📊 개요
+  </div>
+  <div class="nav-item" onclick="showPanel('conditions')">
+    🧪 조건별 분석
+  </div>
+  <div class="nav-item" onclick="showPanel('responses')">
+    📋 전체 응답
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="url-setting">
+      <label>APPS SCRIPT URL</label>
+      <input type="text" id="script-url" placeholder="배포 URL 붙여넣기">
+      <button onclick="saveUrl()">저장 후 불러오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div class="main">
+
+  <!-- 개요 패널 -->
+  <div class="panel active" id="panel-overview">
+    <div class="page-header">
+      <div>
+        <h1>실험 개요</h1>
+        <p>CO₂ × 페퍼민트 향기 집중력 실험 — 응답 현황</p>
+      </div>
+      <button class="btn-refresh" onclick="loadData()">↻ 새로고침</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">TOTAL RESPONSES</div>
+        <div class="value" id="stat-total">—</div>
+        <div class="sub">총 참가자 수</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">TARGET</div>
+        <div class="value" style="color:var(--yellow)" id="stat-target">20</div>
+        <div class="sub">목표 인원</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">AVG REACTION (ms)</div>
+        <div class="value" style="color:var(--green)" id="stat-reaction">—</div>
+        <div class="sub">전체 평균 반응시간</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">COMPLETION</div>
+        <div class="value" style="color:var(--purple)" id="stat-completion">—</div>
+        <div class="sub">목표 달성률</div>
+      </div>
+    </div>
+
+    <div id="overview-loading" class="loading-state">
+      <div class="spinner"></div>
+      Apps Script URL을 설정하고 데이터를 불러오세요
+    </div>
+
+    <div id="overview-content" style="display:none;">
+      <!-- 조건별 빠른 요약 -->
+      <div class="condition-grid" id="condition-summary"></div>
+    </div>
+  </div>
+
+  <!-- 조건별 분석 패널 -->
+  <div class="panel" id="panel-conditions">
+    <div class="page-header">
+      <div>
+        <h1>조건별 분석</h1>
+        <p>4개 실험 조건 평균 비교</p>
+      </div>
+      <button class="btn-refresh" onclick="loadData()">↻ 새로고침</button>
+    </div>
+
+    <div id="conditions-loading" class="loading-state">
+      <div class="spinner"></div>
+      데이터 로딩 중...
+    </div>
+
+    <div id="conditions-content" style="display:none;">
+      <div class="condition-grid" id="conditions-detail"></div>
+    </div>
+  </div>
+
+  <!-- 전체 응답 패널 -->
+  <div class="panel" id="panel-responses">
+    <div class="page-header">
+      <div>
+        <h1>전체 응답 목록</h1>
+        <p>개별 참가자 응답 데이터</p>
+      </div>
+      <button class="btn-refresh" onclick="loadData()">↻ 새로고침</button>
+    </div>
+
+    <div id="responses-loading" class="loading-state">
+      <div class="spinner"></div>
+      데이터 로딩 중...
+    </div>
+
+    <div id="responses-content" style="display:none;">
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <span class="t-title">응답 목록</span>
+          <span class="t-count" id="resp-count">— 건</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>시간</th>
+                <th>성별</th>
+                <th>나이</th>
+                <th>수면(h)</th>
+                <th>카페인</th>
+                <th>컨디션</th>
+                <th>페퍼민트선호</th>
+                <th>A-쾌적</th>
+                <th>A-집중예측</th>
+                <th>A-정답</th>
+                <th>A-반응(ms)</th>
+                <th>B-쾌적</th>
+                <th>B-집중예측</th>
+                <th>B-정답</th>
+                <th>B-반응(ms)</th>
+                <th>C-쾌적</th>
+                <th>C-집중예측</th>
+                <th>C-정답</th>
+                <th>C-반응(ms)</th>
+                <th>D-쾌적</th>
+                <th>D-집중예측</th>
+                <th>D-정답</th>
+                <th>D-반응(ms)</th>
+                <th>최고집중방</th>
+                <th>최고쾌적방</th>
+                <th>피로도</th>
+              </tr>
+            </thead>
+            <tbody id="response-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let allData = [];
+  let scriptUrl = localStorage.getItem('admin_script_url') || '';
+
+  // URL 복원
+  if (scriptUrl) {
+    document.getElementById('script-url').value = scriptUrl;
+  }
+
+  // 저장 및 로드
+  function saveUrl() {
+    scriptUrl = document.getElementById('script-url').value.trim();
+    localStorage.setItem('admin_script_url', scriptUrl);
+    loadData();
+  }
+
+  // 패널 전환
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // 데이터 로드
+  async function loadData() {
+    if (!scriptUrl) {
+      alert('먼저 Apps Script URL을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const res = await fetch(scriptUrl);
+      const raw = await res.json();
+
+      // 첫 행이 헤더인 경우 제거, 아니면 그대로
+      allData = raw.slice(1).filter(r => r[0]); // 타임스탬프 있는 행만
+
+      renderOverview();
+      renderConditions();
+      renderResponses();
+    } catch (err) {
+      alert('데이터 로드 실패: ' + err.message + '\nGET 요청 허용 설정을 확인해주세요.');
+    }
+  }
+
+  // 컬럼 인덱스 (Apps Script doPost row 순서와 동일)
+  const COL = {
+    time: 0, gender: 1, age: 2,
+    exclude_cold: 3, exclude_smell: 4, exclude_allergy: 5, exclude_perfume: 6, exclude_drug: 7,
+    sleep: 8, caffeine: 9, condition: 10, nose: 11, peppermint_pref: 12,
+    // A
+    a_code: 13, a_air: 14, a_temp: 15, a_focus: 16,
+    a_scent: 17, a_scent_str: 18, a_scent_help: 19,
+    a_correct: 20, a_wrong: 21, a_reaction: 22,
+    // B
+    b_code: 23, b_air: 24, b_temp: 25, b_focus: 26,
+    b_scent: 27, b_scent_str: 28, b_scent_help: 29,
+    b_correct: 30, b_wrong: 31, b_reaction: 32,
+    // C
+    c_code: 33, c_air: 34, c_temp: 35, c_focus: 36,
+    c_scent: 37, c_scent_str: 38, c_scent_help: 39,
+    c_correct: 40, c_wrong: 41, c_reaction: 42,
+    // D
+    d_code: 43, d_air: 44, d_temp: 45, d_focus: 46,
+    d_scent: 47, d_scent_str: 48, d_scent_help: 49,
+    d_correct: 50, d_wrong: 51, d_reaction: 52,
+    // P3
+    best_focus: 53, best_comfort: 54, strongest_scent: 55, fatigue: 56, memo: 57
+  };
+
+  function avg(arr) {
+    const nums = arr.map(Number).filter(n => !isNaN(n) && n !== 0);
+    if (!nums.length) return '—';
+    return (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1);
+  }
+
+  function getConditionData(room) {
+    const r = room.toLowerCase();
+    return {
+      air: allData.map(d => d[COL[r + '_air']]),
+      focus: allData.map(d => d[COL[r + '_focus']]),
+      correct: allData.map(d => d[COL[r + '_correct']]),
+      reaction: allData.map(d => d[COL[r + '_reaction']]),
+      scent: allData.map(d => d[COL[r + '_scent_str']])
+    };
+  }
+
+  const CONDITIONS = [
+    { id: 'A', label: '방 A', desc: '환기 ✕  향기 ✕', badgeClass: 'badge-A', color: '#f87171' },
+    { id: 'B', label: '방 B', desc: '환기 ✕  향기 ✅ (핵심)', badgeClass: 'badge-B', color: '#fbbf24' },
+    { id: 'C', label: '방 C', desc: '환기 ✅  향기 ✕ (기준)', badgeClass: 'badge-C', color: '#4ade80' },
+    { id: 'D', label: '방 D', desc: '환기 ✅  향기 ✅', badgeClass: 'badge-D', color: '#a78bfa' }
+  ];
+
+  function renderConditionCard(cond, data) {
+    const airAvg = avg(data.air);
+    const focusAvg = avg(data.focus);
+    const correctAvg = avg(data.correct);
+    const reactionAvg = avg(data.reaction);
+
+    const airPct = airAvg !== '—' ? (parseFloat(airAvg) / 5 * 100) : 0;
+    const focusPct = focusAvg !== '—' ? (parseFloat(focusAvg) / 5 * 100) : 0;
+    const correctPct = correctAvg !== '—' ? Math.min(parseFloat(correctAvg) / 30 * 100, 100) : 0;
+
+    return `
+      <div class="condition-card">
+        <div class="c-header">
+          <div class="condition-badge ${cond.badgeClass}">${cond.id}</div>
+          <div>
+            <div class="c-title">${cond.label}</div>
+            <div class="c-desc">${cond.desc}</div>
+          </div>
+        </div>
+        <div class="metric-row">
+          <span class="m-label">공기 쾌적도</span>
+          <span class="m-value">${airAvg} / 5</span>
+        </div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:${airPct}%;background:${cond.color}"></div></div>
+        <div class="metric-row" style="margin-top:8px;">
+          <span class="m-label">집중 예측도</span>
+          <span class="m-value">${focusAvg} / 5</span>
+        </div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:${focusPct}%;background:${cond.color}"></div></div>
+        <div class="metric-row" style="margin-top:8px;">
+          <span class="m-label">스트룹 정답 수</span>
+          <span class="m-value">${correctAvg}</span>
+        </div>
+        <div class="metric-bar"><div class="metric-bar-fill" style="width:${correctPct}%;background:${cond.color}"></div></div>
+        <div class="metric-row" style="margin-top:8px;border:none;">
+          <span class="m-label">평균 반응시간</span>
+          <span class="m-value">${reactionAvg} ms</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderOverview() {
+    const total = allData.length;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-completion').textContent = Math.round(total / 20 * 100) + '%';
+
+    const allReactions = ['a_reaction','b_reaction','c_reaction','d_reaction']
+      .flatMap(k => allData.map(d => d[COL[k]]))
+      .map(Number).filter(n => !isNaN(n) && n > 0);
+    const avgReaction = allReactions.length
+      ? Math.round(allReactions.reduce((a,b) => a+b, 0) / allReactions.length)
+      : '—';
+    document.getElementById('stat-reaction').textContent = avgReaction === '—' ? '—' : avgReaction + '';
+
+    const summaryEl = document.getElementById('condition-summary');
+    summaryEl.innerHTML = CONDITIONS.map(c => renderConditionCard(c, getConditionData(c.id))).join('');
+
+    document.getElementById('overview-loading').style.display = 'none';
+    document.getElementById('overview-content').style.display = 'block';
+  }
+
+  function renderConditions() {
+    const el = document.getElementById('conditions-detail');
+    el.innerHTML = CONDITIONS.map(c => renderConditionCard(c, getConditionData(c.id))).join('');
+    document.getElementById('conditions-loading').style.display = 'none';
+    document.getElementById('conditions-content').style.display = 'block';
+  }
+
+  function renderResponses() {
+    const tbody = document.getElementById('response-table-body');
+    document.getElementById('resp-count').textContent = allData.length + ' 건';
+
+    if (!allData.length) {
+      tbody.innerHTML = '<tr><td colspan="27" style="text-align:center;padding:40px;color:var(--text3);">응답 데이터가 없습니다</td></tr>';
+    } else {
+      tbody.innerHTML = allData.map((d, i) => {
+        const time = d[COL.time] ? new Date(d[COL.time]).toLocaleString('ko-KR').slice(0, 16) : '—';
+        return `<tr>
+          <td class="highlight">${i + 1}</td>
+          <td>${time}</td>
+          <td>${d[COL.gender] || '—'}</td>
+          <td>${d[COL.age] || '—'}</td>
+          <td>${d[COL.sleep] || '—'}</td>
+          <td>${d[COL.caffeine] || '—'}</td>
+          <td>${d[COL.condition] || '—'}</td>
+          <td>${d[COL.peppermint_pref] || '—'}</td>
+          <td>${d[COL.a_air] || '—'}</td>
+          <td>${d[COL.a_focus] || '—'}</td>
+          <td class="highlight">${d[COL.a_correct] || '—'}</td>
+          <td class="highlight">${d[COL.a_reaction] || '—'}</td>
+          <td>${d[COL.b_air] || '—'}</td>
+          <td>${d[COL.b_focus] || '—'}</td>
+          <td class="highlight">${d[COL.b_correct] || '—'}</td>
+          <td class="highlight">${d[COL.b_reaction] || '—'}</td>
+          <td>${d[COL.c_air] || '—'}</td>
+          <td>${d[COL.c_focus] || '—'}</td>
+          <td class="highlight">${d[COL.c_correct] || '—'}</td>
+          <td class="highlight">${d[COL.c_reaction] || '—'}</td>
+          <td>${d[COL.d_air] || '—'}</td>
+          <td>${d[COL.d_focus] || '—'}</td>
+          <td class="highlight">${d[COL.d_correct] || '—'}</td>
+          <td class="highlight">${d[COL.d_reaction] || '—'}</td>
+          <td>${d[COL.best_focus] || '—'}</td>
+          <td>${d[COL.best_comfort] || '—'}</td>
+          <td>${d[COL.fatigue] || '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('responses-loading').style.display = 'none';
+    document.getElementById('responses-content').style.display = 'block';
+  }
+
+  // 초기 로드 시도
+  if (scriptUrl) loadData();
+</script>
+</body>
+</html>
